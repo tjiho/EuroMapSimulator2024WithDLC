@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Euro Toulouse</title>
+    <link rel="stylesheet" type="text/css" media="screen" href="style.css" />
+    <script src='https://maps.ppsfleet.navy/maplibre/mapbox-gl-unminified.js'></script>
+    <link href='https://maps.ppsfleet.navy/maplibre/mapbox-gl.css' rel='stylesheet' />
+</head>
+
+<body>
+    <div id="map"></div>
+</body>
+
+<script>
+    const nomDesListes = ["POUR UNE HUMANITE SOUVERAINE","POUR UNE DEMOCRATIE REELLE : DECIDONS NOUS-MEMES !","LA FRANCE FIERE, MENEE PAR MARION MARECHAL ET SOUTENUE PAR ÉRIC ZEMMOUR","LA FRANCE INSOUMISE - UNION POPULAIRE","LA FRANCE REVIENT ! AVEC JORDAN BARDELLA ET MARINE LE PEN","EUROPE ÉCOLOGIE","FREE PALESTINE","PARTI ANIMALISTE - LES ANIMAUX COMPTENT, VOTRE VOIX AUSSI","PARTI REVOLUTIONNAIRE COMMUNISTES","PARTI PIRATE","BESOIN D'EUROPE","PACE - PARTI DES CITOYENS EUROPÉENS, POUR L'ARMÉE EUROPÉENNE, POUR L'EUROPE SOCIALE , POUR LA PLANÈTE !","ÉQUINOXE : ÉCOLOGIE PRATIQUE ET RENOUVEAU DÉMOCRATIQUE","ECOLOGIE POSITIVE ET TERRITOIRES","LISTE ASSELINEAU-FREXIT, POUR LE POUVOIR D'ACHAT ET POUR LA PAIX","PAIX ET DECROISSANCE","POUR UNE AUTRE EUROPE","LA DROITE POUR FAIRE ENTENDRE LA VOIX DE LA FRANCE EN EUROPE","LUTTE OUVRIERE - LE CAMP DES TRAVAILLEURS","CHANGER L'EUROPE","NOUS LE PEUPLE","POUR UN MONDE SANS FRONTIERES NI PATRONS, URGENCE REVOLUTION !","POUR LE PAIN, LA PAIX, LA LIBERTÉ ! PRÉSENTÉE PAR LE PARTI DES TRAVAILLEURS","L'EUROPE CA SUFFIT !","NON ! PRENONS-NOUS EN MAINS","FORTERESSE EUROPE - LISTE D'UNITE NATIONALISTE","RÉVEILLER L'EUROPE","NON À L'UE ET À L'OTAN, COMMUNISTES POUR LA PAIX ET LE PROGRÈS SOCIAL","ALLIANCE RURALE","FRANCE LIBRE","EUROPE TERRITOIRES ÉCOLOGIE","LA RUCHE CITOYENNE","GAUCHE UNIE POUR LE MONDE DU TRAVAIL SOUTENUE PAR FABIEN ROUSSEL","DEFENDRE LES ENFANTS","ÉCOLOGIE AU CENTRE","DEMOCRATIE REPRESENTATIVE","ESPERANTO LANGUE COMMUNE","LIBERTÉ DÉMOCRATIQUE FRANÇAISE"]
+
+    var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'https://maps.ppsfleet.navy/tileserver-data/qwant-basic-gl-style-toulouse/built-style-debug.json', // stylesheet location
+        center: [1.4436, 43.6042], // starting position [lng, lat]
+        zoom: 12 // starting zoom
+    });
+
+    map.on('load', async () => {
+        const resultat = await recupererLesDonnees()
+        const indexParBureauDeVote = indexerParBureauDeVote(resultat)
+        
+        const donneesGeometrique = await recupererLesDonneesGeometrique()
+        augmenterLesResultatsAvecLesDonneesGeometrique(indexParBureauDeVote, donneesGeometrique)
+
+        console.log(indexParBureauDeVote)
+        afficherLesDonnees(indexParBureauDeVote)
+        
+    });
+
+    async function recupererLesDonnees() {
+        const res = await fetch('http://127.0.0.1:12345/euro-2024-resultats.json')
+        const jsonRes = await res.json()
+        
+        
+        return jsonRes
+    }
+
+    function indexerParBureauDeVote(donneesDesBureauxDeVote) {
+        const bureauxDeVote = {}
+        for (const bureauDeVote of donneesDesBureauxDeVote) {
+            bureauxDeVote[bureauDeVote["column_7"]] = {
+                resultats: traiterLesResultatsParListe(bureauDeVote)
+            }
+        }
+        return bureauxDeVote
+    }
+
+    function traiterLesResultatsParListe(donneesDUnBureau) {
+        // fait moi un for qui commence a 20 et s'arrète à 92 par pas de 2 svp
+        const resultats = {}
+        for (let i = 0; i <= 38; i += 1) {
+            const nomDeLaListe = nomDesListes[i]
+            const nombreDeVoix = donneesDUnBureau[`column_${i * 2 + 20}`]
+            resultats[nomDeLaListe] = nombreDeVoix
+            
+
+        }
+        // trier par nombre de voix
+        const resultatsTries = Object.entries(resultats).sort((a, b) => b[1] - a[1])
+        return resultatsTries
+    }
+
+    async function recupererLesDonneesGeometrique() {
+        const res = await fetch('http://127.0.0.1:12345/elections-2024-lieux-de-vote.json')
+        const jsonRes = await res.json()
+        return jsonRes
+    }
+
+    function augmenterLesResultatsAvecLesDonneesGeometrique(resultats, geometrie) {
+        for (const lieu of geometrie) {
+            for(const nomDeBureauDeVote of lieu['bureaux']) {
+                resultats[ajouterUnZeroSiNescessaire(nomDeBureauDeVote)]['geometrie'] = lieu['geo_point_2d']
+            }
+        }
+    }
+
+    function ajouterUnZeroSiNescessaire(nomDeBureauDeVote) {
+        if (nomDeBureauDeVote.length === 3) {
+            return "0" + nomDeBureauDeVote
+        }
+        return nomDeBureauDeVote
+    }
+
+    function afficherLesDonnees(indexParBureauDeVote) {
+        for(const [nomDeBureauDeVote, donneesDuBureauDeVote] of Object.entries(indexParBureauDeVote)) {
+            const geometrie = donneesDuBureauDeVote['geometrie']
+            try {
+                const popup = new mapboxgl.Popup()
+                    .setHTML(creerHtml(nomDeBureauDeVote, donneesDuBureauDeVote['resultats']))
+                new mapboxgl.Marker()
+                    .setLngLat(geometrie)
+                    .setPopup(popup)
+                    .addTo(map)
+            } catch {
+                console.log("erreur")
+                console.log("nomDeBureauDeVote", nomDeBureauDeVote)
+                console.log("geometrie", geometrie)
+            }
+            
+        }
+    }
+
+    function creerHtml(nomDeLaListe, nombreDeVoix) {
+        const parent = document.createElement('div')
+        const titre = document.createElement('h1')
+        titre.textContent = nomDeLaListe
+        parent.appendChild(titre)
+        // on affiche les 5 premiers résultats
+        for (let i = 0; i < 5; i++) {
+            const ligne = document.createElement('p')
+            ligne.textContent = `${nombreDeVoix[i][0]} : ${nombreDeVoix[i][1]}`
+            parent.appendChild(ligne)
+        }
+        return parent.innerHTML
+    }
+</script>
+</html>
