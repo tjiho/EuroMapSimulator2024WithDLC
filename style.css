@@ -9,3 +9,19 @@ body {
 #map {
     height: 100%;
 }
+
+.popup {
+    display: flex;
+    gap: 1rem;
+    overflow: auto;
+    padding: 1rem;
+}
+#map .mapboxgl-popup-content {
+    width: 500px;
+    padding: 0px;
+    
+}
+
+.bureau-de-vote {
+    flex-shrink: 0;
+}

@@ -29,13 +29,15 @@
         const donneesGeometrique = await recupererLesDonneesGeometrique()
         augmenterLesResultatsAvecLesDonneesGeometrique(indexParBureauDeVote, donneesGeometrique)
 
-        console.log(indexParBureauDeVote)
-        afficherLesDonnees(indexParBureauDeVote)
+        const indexFusionneParCoordonnees = fusionnerLesBureauxDevoteAvecLesMemesCoordonnees(indexParBureauDeVote)
+
+        console.log(indexFusionneParCoordonnees)
+        afficherLesDonnees(indexFusionneParCoordonnees)
         
     });
 
     async function recupererLesDonnees() {
-        const res = await fetch('http://127.0.0.1:12345/euro-2024-resultats.json')
+        const res = await fetch('/euro-2024-resultats.json')
         const jsonRes = await res.json()
         
         
@@ -68,7 +70,7 @@
     }
 
     async function recupererLesDonneesGeometrique() {
-        const res = await fetch('http://127.0.0.1:12345/elections-2024-lieux-de-vote.json')
+        const res = await fetch('/elections-2024-lieux-de-vote.json')
         const jsonRes = await res.json()
         return jsonRes
     }
@@ -88,29 +90,65 @@
         return nomDeBureauDeVote
     }
 
-    function afficherLesDonnees(indexParBureauDeVote) {
+    function fusionnerLesBureauxDevoteAvecLesMemesCoordonnees(indexParBureauDeVote) {
+        const indexFusionne = {}
         for(const [nomDeBureauDeVote, donneesDuBureauDeVote] of Object.entries(indexParBureauDeVote)) {
-            const geometrie = donneesDuBureauDeVote['geometrie']
+            const geometrie = hasherLesCoordonnees(donneesDuBureauDeVote['geometrie'])
+            if (! indexFusionne[geometrie]) {
+                indexFusionne[geometrie] = {}
+                indexFusionne[geometrie]['@geometrie'] = donneesDuBureauDeVote['geometrie']
+            }
+                
+            indexFusionne[geometrie][nomDeBureauDeVote] = donneesDuBureauDeVote
+            
+        }
+        return indexFusionne
+    }
+
+    function hasherLesCoordonnees(geometrie) {
+        if(!geometrie) {
+            return "0-0"
+        }
+        return `${geometrie['lon']}-${geometrie['lat']}`
+    }
+
+    function afficherLesDonnees(indexFusionneParCoordonnees) {
+        for(const indexParBureauDeVote of Object.values(indexFusionneParCoordonnees)) {
             try {
+                const geometrie = indexParBureauDeVote['@geometrie']
                 const popup = new mapboxgl.Popup()
-                    .setHTML(creerHtml(nomDeBureauDeVote, donneesDuBureauDeVote['resultats']))
+                .setHTML(creerHtml(indexParBureauDeVote))
                 new mapboxgl.Marker()
                     .setLngLat(geometrie)
                     .setPopup(popup)
                     .addTo(map)
-            } catch {
-                console.log("erreur")
-                console.log("nomDeBureauDeVote", nomDeBureauDeVote)
-                console.log("geometrie", geometrie)
-            }
-            
+            } catch (error) {
+                
+            }   
         }
+            
+    }
+    
+
+    function creerHtml(indexParBureauDeVote) {
+        const parent = document.createElement('div')
+        const popup_container = document.createElement('div')
+        popup_container.classList.add('popup')
+        for(const [nomDeBureauDeVote, donneesDuBureauDeVote] of Object.entries(indexParBureauDeVote)) {
+            if(nomDeBureauDeVote === '@geometrie' || !donneesDuBureauDeVote ) {
+                continue
+            }
+            popup_container.appendChild(creerHtmlPourUnBureau(nomDeBureauDeVote, donneesDuBureauDeVote['resultats']))
+        }
+        parent.appendChild(popup_container)
+        return parent.innerHTML
     }
 
-    function creerHtml(nomDeLaListe, nombreDeVoix) {
+    function creerHtmlPourUnBureau(nomDuBureau, nombreDeVoix) {
         const parent = document.createElement('div')
+        parent.classList.add('bureau-de-vote')
         const titre = document.createElement('h1')
-        titre.textContent = nomDeLaListe
+        titre.textContent = nomDuBureau
         parent.appendChild(titre)
         // on affiche les 5 premiers résultats
         for (let i = 0; i < 5; i++) {
@@ -118,7 +156,7 @@
             ligne.textContent = `${nombreDeVoix[i][0]} : ${nombreDeVoix[i][1]}`
             parent.appendChild(ligne)
         }
-        return parent.innerHTML
+        return parent
     }
 </script>
 </html>
