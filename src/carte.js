@@ -1,4 +1,4 @@
-import { creerMarqueurCamembert, creerMarqueurPoint } from './marqueurs.js'
+import { creerMarqueurCamembert, creerMarqueurPoint, creerMarqueurMelange } from './marqueurs.js'
 import { afficherPanneau } from './panneau.js'
 
 let marqueurs = []
@@ -54,13 +54,31 @@ function traiterLesResultatsParListe(donneesDUnBureau, election) {
     return Object.entries(resultats).sort((a, b) => b[1] - a[1])
 }
 
+function centroide(geoShape) {
+    const geometry = geoShape.geometry || geoShape
+    const ring = geometry.type === 'MultiPolygon'
+        ? geometry.coordinates[0][0]
+        : geometry.coordinates[0]
+    let lonSum = 0, latSum = 0
+    for (const [lon, lat] of ring) {
+        lonSum += lon
+        latSum += lat
+    }
+    return { lon: lonSum / ring.length, lat: latSum / ring.length }
+}
+
 function augmenterLesResultatsAvecLesDonneesGeometrique(resultats, geometrie) {
     for (const lieu of geometrie) {
-        for (const nomDeBureauDeVote of lieu['bureaux']) {
-            const cle = padBureauDeVote(nomDeBureauDeVote)
-            if (resultats[cle]) {
-                resultats[cle]['geometrie'] = lieu['geo_point_2d']
+        if (lieu.bureaux) {
+            const centre = lieu.geo_shape ? centroide(lieu.geo_shape) : lieu.geo_point_2d
+            for (const nomDeBureauDeVote of lieu.bureaux) {
+                const cle = padBureauDeVote(nomDeBureauDeVote)
+                if (resultats[cle]) resultats[cle].geometrie = centre
             }
+        } else if (lieu.bureau) {
+            const centre = lieu.geo_shape ? centroide(lieu.geo_shape) : lieu.geo_point_2d
+            const cle = padBureauDeVote(lieu.bureau)
+            if (resultats[cle]) resultats[cle].geometrie = centre
         }
     }
 }
@@ -93,7 +111,9 @@ function agregerLesVoix(bureaux) {
 }
 
 function afficherLesDonnees(map, indexFusionneParCoordonnees, election, mode) {
-    const creerMarqueur = mode === 'point' ? creerMarqueurPoint : creerMarqueurCamembert
+    const creerMarqueur = mode === 'point' ? creerMarqueurPoint
+        : mode === 'melange' ? creerMarqueurMelange
+        : creerMarqueurCamembert
 
     for (const { coordonnees, bureaux } of Object.values(indexFusionneParCoordonnees)) {
         try {

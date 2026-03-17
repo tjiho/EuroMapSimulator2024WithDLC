@@ -1,4 +1,5 @@
 import { COULEUR_AUTRES } from './const/couleurs.js'
+import { hexVersRgb, rgbVersHex } from './tools/couleurs.js'
 
 export function creerMarqueurCamembert(resultatsAgreges, couleurs) {
     const total = resultatsAgreges.reduce((s, r) => s + r[1], 0)
@@ -20,7 +21,7 @@ export function creerMarqueurCamembert(resultatsAgreges, couleurs) {
 
     // Cas spécial : une seule tranche >= 99.5%
     if (tranches[0].fraction >= 0.995) {
-        div.innerHTML = `<svg width="40" height="40" viewBox="-1 -1 2 2">
+        div.innerHTML = `<svg viewBox="-1 -1 2 2">
             <circle cx="0" cy="0" r="1" fill="${tranches[0].couleur}" />
         </svg>`
         return div
@@ -39,7 +40,7 @@ export function creerMarqueurCamembert(resultatsAgreges, couleurs) {
         angle += delta
     }
 
-    div.innerHTML = `<svg width="40" height="40" viewBox="-1 -1 2 2">${paths}</svg>`
+    div.innerHTML = `<svg viewBox="-1 -1 2 2">${paths}</svg>`
     return div
 }
 
@@ -49,5 +50,33 @@ export function creerMarqueurPoint(resultatsAgreges, couleurs) {
     div.style.backgroundColor = resultatsAgreges.length > 0
         ? (couleurs[resultatsAgreges[0][0]] || COULEUR_AUTRES)
         : COULEUR_AUTRES
+    return div
+}
+
+export function creerMarqueurMelange(resultatsAgreges, couleurs) {
+    const div = document.createElement('div')
+    div.className = 'marqueur-point'
+
+    const top3 = resultatsAgreges.slice(0, 3)
+    const totalTop3 = top3.reduce((s, r) => s + r[1], 0)
+
+    if (totalTop3 === 0) {
+        div.style.backgroundColor = COULEUR_AUTRES
+        return div
+    }
+
+    const poidsCarres = top3.map(([, voix]) => (voix / totalTop3) ** 2)
+    const totalPoidsCarres = poidsCarres.reduce((s, p) => s + p, 0)
+
+    let r = 0, g = 0, b = 0
+    top3.forEach(([nom], i) => {
+        const poids = poidsCarres[i] / totalPoidsCarres
+        const [cr, cg, cb] = hexVersRgb(couleurs[nom] || COULEUR_AUTRES)
+        r += cr * poids
+        g += cg * poids
+        b += cb * poids
+    })
+
+    div.style.backgroundColor = rgbVersHex(r, g, b)
     return div
 }

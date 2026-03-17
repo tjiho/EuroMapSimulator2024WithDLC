@@ -67,11 +67,18 @@ body {
 
 .marqueur-camembert {
     cursor: pointer;
+    width: var(--taille-marqueur, 40px);
+    height: var(--taille-marqueur, 40px);
+}
+
+.marqueur-camembert svg {
+    width: 100%;
+    height: 100%;
 }
 
 .marqueur-point {
     cursor: pointer;
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
+    width: var(--taille-marqueur, 40px);
+    height: var(--taille-marqueur, 40px);
 }

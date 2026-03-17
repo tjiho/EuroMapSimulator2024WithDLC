@@ -3,7 +3,7 @@ import { couleursMunicipales2026, couleursEuropeennes2024 } from './couleurs.js'
 export const elections = {
     "Municipales 2026": {
         fichierResultats: "/data/municipales-2026-resultats.json",
-        fichierGeometrie: "/data/elections-municipales-2026-lieux-de-vote.json",
+        fichierGeometrie: "/data/election-2026-lieux-de-vote.json",
         couleurs: couleursMunicipales2026,
         nomDesListes: Object.keys(couleursMunicipales2026)
     },
