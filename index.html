@@ -63,6 +63,8 @@
 
     map.on('zoom', mettreAJourTailleMarqueurs);
 
+    map.addControl( new maplibregl.NavigationControl(), 'bottom-left')
+
     document.getElementById('election-select').addEventListener('change', (e) => {
         electionActuelle = e.target.value
         chargerElection(map, elections[electionActuelle], modeActuel)
