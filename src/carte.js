@@ -1,11 +1,12 @@
 import { creerMarqueurCamembert, creerMarqueurPoint, creerMarqueurMelange } from './marqueurs.js'
 import { afficherPanneau } from './panneau.js'
+import { creerToutesLesZones, supprimerToutesLesZones } from './zone.js'
 
 let marqueurs = []
 const cache = {}
 
-export async function chargerElection(map, election, mode = 'camembert') {
-    supprimerLesMarqueurs()
+export async function chargerElection(map, election, mode = 'zone') {
+    supprimerLesMarqueurs(map)
 
     const cle = election.fichierResultats
     if (!cache[cle]) {
@@ -21,11 +22,12 @@ export async function chargerElection(map, election, mode = 'camembert') {
     afficherLesDonnees(map, cache[cle], election, mode)
 }
 
-export function supprimerLesMarqueurs() {
+export function supprimerLesMarqueurs(map) {
     for (const marqueur of marqueurs) {
         marqueur.remove()
     }
     marqueurs = []
+    supprimerToutesLesZones(map)
 }
 
 async function recupererJson(url) {
@@ -73,13 +75,20 @@ function augmenterLesResultatsAvecLesDonneesGeometrique(resultats, geometrie) {
             const centre = lieu.geo_shape ? centroide(lieu.geo_shape) : lieu.geo_point_2d
             for (const nomDeBureauDeVote of lieu.bureaux) {
                 const cle = padBureauDeVote(nomDeBureauDeVote)
-                if (resultats[cle]) resultats[cle].geometrie = centre
+                if (resultats[cle]){
+                    resultats[cle].geometrie = centre
+                    resultats[cle].shape = lieu.geo_shape
+                }
             }
         } else if (lieu.bureau) {
             const centre = lieu.geo_shape ? centroide(lieu.geo_shape) : lieu.geo_point_2d
             const cle = padBureauDeVote(lieu.bureau)
-            if (resultats[cle]) resultats[cle].geometrie = centre
+            if (resultats[cle]) {
+                resultats[cle].geometrie = centre
+                resultats[cle].shape = lieu.geo_shape
+            }
         }
+
     }
 }
 
@@ -92,8 +101,9 @@ function fusionnerParCoordonnees(indexParBureauDeVote) {
     for (const [nomDeBureauDeVote, donneesDuBureauDeVote] of Object.entries(indexParBureauDeVote)) {
         const geo = donneesDuBureauDeVote['geometrie']
         const cle = geo ? `${geo['lon']}-${geo['lat']}` : "0-0"
+        const forme = donneesDuBureauDeVote['shape']
         if (!indexFusionne[cle]) {
-            indexFusionne[cle] = { coordonnees: geo, bureaux: {} }
+            indexFusionne[cle] = { coordonnees: geo, shape: forme, bureaux: {} }
         }
         indexFusionne[cle].bureaux[nomDeBureauDeVote] = donneesDuBureauDeVote
     }
@@ -111,12 +121,16 @@ function agregerLesVoix(bureaux) {
 }
 
 function afficherLesDonnees(map, indexFusionneParCoordonnees, election, mode) {
-    const creerMarqueur = mode === 'point' ? creerMarqueurPoint
-        : mode === 'melange' ? creerMarqueurMelange
-        : creerMarqueurCamembert
+    if (mode === 'zone') {
+        creerToutesLesZones(map, indexFusionneParCoordonnees, election)
+        return
+    }
 
     for (const { coordonnees, bureaux } of Object.values(indexFusionneParCoordonnees)) {
         try {
+            const creerMarqueur = mode === 'point' ? creerMarqueurPoint
+                : mode === 'melange' ? creerMarqueurMelange
+                : creerMarqueurCamembert
             const resultatsAgreges = agregerLesVoix(bureaux)
             const element = creerMarqueur(resultatsAgreges, election.couleurs)
 
