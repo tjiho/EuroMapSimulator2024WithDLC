@@ -1,5 +1,6 @@
 import { creerMarqueurCamembert, creerMarqueurPoint, creerMarqueurMelange } from './marqueurs.js'
 import { afficherPanneau } from './panneau.js'
+import { creerZone } from './zone.js'
 
 let marqueurs = []
 const cache = {}
@@ -73,13 +74,20 @@ function augmenterLesResultatsAvecLesDonneesGeometrique(resultats, geometrie) {
             const centre = lieu.geo_shape ? centroide(lieu.geo_shape) : lieu.geo_point_2d
             for (const nomDeBureauDeVote of lieu.bureaux) {
                 const cle = padBureauDeVote(nomDeBureauDeVote)
-                if (resultats[cle]) resultats[cle].geometrie = centre
+                if (resultats[cle]){
+                    resultats[cle].geometrie = centre
+                    resultats[cle].shape = lieu.geo_shape
+                }
             }
         } else if (lieu.bureau) {
             const centre = lieu.geo_shape ? centroide(lieu.geo_shape) : lieu.geo_point_2d
             const cle = padBureauDeVote(lieu.bureau)
-            if (resultats[cle]) resultats[cle].geometrie = centre
+            if (resultats[cle]) {
+                resultats[cle].geometrie = centre
+                resultats[cle].shape = lieu.geo_shape
+            }
         }
+
     }
 }
 
@@ -92,8 +100,9 @@ function fusionnerParCoordonnees(indexParBureauDeVote) {
     for (const [nomDeBureauDeVote, donneesDuBureauDeVote] of Object.entries(indexParBureauDeVote)) {
         const geo = donneesDuBureauDeVote['geometrie']
         const cle = geo ? `${geo['lon']}-${geo['lat']}` : "0-0"
+        const forme = donneesDuBureauDeVote['shape']
         if (!indexFusionne[cle]) {
-            indexFusionne[cle] = { coordonnees: geo, bureaux: {} }
+            indexFusionne[cle] = { coordonnees: geo, shape: forme, bureaux: {} }
         }
         indexFusionne[cle].bureaux[nomDeBureauDeVote] = donneesDuBureauDeVote
     }
@@ -115,20 +124,28 @@ function afficherLesDonnees(map, indexFusionneParCoordonnees, election, mode) {
         : mode === 'melange' ? creerMarqueurMelange
         : creerMarqueurCamembert
 
-    for (const { coordonnees, bureaux } of Object.values(indexFusionneParCoordonnees)) {
+    for (const { coordonnees, shape, bureaux } of Object.values(indexFusionneParCoordonnees)) {
         try {
-            const resultatsAgreges = agregerLesVoix(bureaux)
-            const element = creerMarqueur(resultatsAgreges, election.couleurs)
 
-            element.addEventListener('click', (e) => {
-                e.stopPropagation()
-                afficherPanneau(bureaux, election.couleurs)
-            })
 
-            const marqueur = new maplibregl.Marker({ element })
-                .setLngLat(coordonnees)
-                .addTo(map)
-            marqueurs.push(marqueur)
+            if (shape) {
+                const nomBureau = Object.keys(bureaux)[0]  // Un seul bureau quand c'est un quartier
+                creerZone(map, election.couleurs, shape, bureaux[nomBureau], nomBureau)
+            }
+            else {
+                const resultatsAgreges = agregerLesVoix(bureaux)
+                const element = creerMarqueur(resultatsAgreges, election.couleurs)
+
+                element.addEventListener('click', (e) => {
+                    e.stopPropagation()
+                    afficherPanneau(bureaux, election.couleurs)
+                })
+
+                const marqueur = new maplibregl.Marker({ element })
+                    .setLngLat(coordonnees)
+                    .addTo(map)
+                marqueurs.push(marqueur)
+            }
         } catch (error) {
             console.warn("Marqueur ignoré :", error)
         }
