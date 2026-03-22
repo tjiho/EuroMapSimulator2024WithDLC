@@ -1,12 +1,12 @@
 import { creerMarqueurCamembert, creerMarqueurPoint, creerMarqueurMelange } from './marqueurs.js'
 import { afficherPanneau } from './panneau.js'
-import { creerZone } from './zone.js'
+import { creerToutesLesZones, supprimerToutesLesZones } from './zone.js'
 
 let marqueurs = []
 const cache = {}
 
 export async function chargerElection(map, election, mode = 'zone') {
-    supprimerLesMarqueurs()
+    supprimerLesMarqueurs(map)
 
     const cle = election.fichierResultats
     if (!cache[cle]) {
@@ -22,11 +22,12 @@ export async function chargerElection(map, election, mode = 'zone') {
     afficherLesDonnees(map, cache[cle], election, mode)
 }
 
-export function supprimerLesMarqueurs() {
+export function supprimerLesMarqueurs(map) {
     for (const marqueur of marqueurs) {
         marqueur.remove()
     }
     marqueurs = []
+    supprimerToutesLesZones(map)
 }
 
 async function recupererJson(url) {
@@ -120,35 +121,28 @@ function agregerLesVoix(bureaux) {
 }
 
 function afficherLesDonnees(map, indexFusionneParCoordonnees, election, mode) {
-   
+    if (mode === 'zone') {
+        creerToutesLesZones(map, indexFusionneParCoordonnees, election)
+        return
+    }
 
-    for (const { coordonnees, shape, bureaux } of Object.values(indexFusionneParCoordonnees)) {
+    for (const { coordonnees, bureaux } of Object.values(indexFusionneParCoordonnees)) {
         try {
-            console.log(mode)
+            const creerMarqueur = mode === 'point' ? creerMarqueurPoint
+                : mode === 'melange' ? creerMarqueurMelange
+                : creerMarqueurCamembert
+            const resultatsAgreges = agregerLesVoix(bureaux)
+            const element = creerMarqueur(resultatsAgreges, election.couleurs)
 
-            if (shape && mode === 'zone') {
-                const nomBureau = Object.keys(bureaux)[0]  // Un seul bureau quand c'est un quartier
-                creerZone(map, election.couleurs, shape, bureaux[nomBureau], nomBureau, (e) => {
-                    afficherPanneau(bureaux, election.couleurs)
-                })
-            }
-            else {
-                 const creerMarqueur = mode === 'point' ? creerMarqueurPoint
-                    : mode === 'melange' ? creerMarqueurMelange
-                    : creerMarqueurCamembert
-                const resultatsAgreges = agregerLesVoix(bureaux)
-                const element = creerMarqueur(resultatsAgreges, election.couleurs)
+            element.addEventListener('click', (e) => {
+                e.stopPropagation()
+                afficherPanneau(bureaux, election.couleurs)
+            })
 
-                element.addEventListener('click', (e) => {
-                    e.stopPropagation()
-                    afficherPanneau(bureaux, election.couleurs)
-                })
-
-                const marqueur = new maplibregl.Marker({ element })
-                    .setLngLat(coordonnees)
-                    .addTo(map)
-                marqueurs.push(marqueur)
-            }
+            const marqueur = new maplibregl.Marker({ element })
+                .setLngLat(coordonnees)
+                .addTo(map)
+            marqueurs.push(marqueur)
         } catch (error) {
             console.warn("Marqueur ignoré :", error)
         }
