@@ -5,7 +5,7 @@ import { creerZone } from './zone.js'
 let marqueurs = []
 const cache = {}
 
-export async function chargerElection(map, election, mode = 'camembert') {
+export async function chargerElection(map, election, mode = 'zone') {
     supprimerLesMarqueurs()
 
     const cle = election.fichierResultats
@@ -120,19 +120,22 @@ function agregerLesVoix(bureaux) {
 }
 
 function afficherLesDonnees(map, indexFusionneParCoordonnees, election, mode) {
-    const creerMarqueur = mode === 'point' ? creerMarqueurPoint
-        : mode === 'melange' ? creerMarqueurMelange
-        : creerMarqueurCamembert
+   
 
     for (const { coordonnees, shape, bureaux } of Object.values(indexFusionneParCoordonnees)) {
         try {
+            console.log(mode)
 
-
-            if (shape) {
+            if (shape && mode === 'zone') {
                 const nomBureau = Object.keys(bureaux)[0]  // Un seul bureau quand c'est un quartier
-                creerZone(map, election.couleurs, shape, bureaux[nomBureau], nomBureau)
+                creerZone(map, election.couleurs, shape, bureaux[nomBureau], nomBureau, (e) => {
+                    afficherPanneau(bureaux, election.couleurs)
+                })
             }
             else {
+                 const creerMarqueur = mode === 'point' ? creerMarqueurPoint
+                    : mode === 'melange' ? creerMarqueurMelange
+                    : creerMarqueurCamembert
                 const resultatsAgreges = agregerLesVoix(bureaux)
                 const element = creerMarqueur(resultatsAgreges, election.couleurs)
 

@@ -1,6 +1,7 @@
-export function creerZone(map, couleurs, shape, bureau, nomBureau) {
-    //console.log(bureau.resultats)
+export function creerZone(map, couleurs, shape, bureau, nomBureau, click) {
     const couleur = couleurs[bureau.resultats[0][0]]
+    const totalVoix = bureau.resultats.reduce((total, res) => total + res[1], 0)
+    const basePercentage = bureau.resultats[0][1] / totalVoix
 
     map.addSource(nomBureau, {
         'type': 'geojson',
@@ -13,7 +14,7 @@ export function creerZone(map, couleurs, shape, bureau, nomBureau) {
         'source': nomBureau,
         'paint': {
             'fill-color': couleur,
-            'fill-opacity': 0.3
+            'fill-opacity': basePercentage
         }
     })
 
@@ -26,4 +27,14 @@ export function creerZone(map, couleurs, shape, bureau, nomBureau) {
             'line-width': 1
         }
     })
+
+    map.on('mouseenter', nomBureau+'-fill', () => {
+        map.setPaintProperty(nomBureau+'-fill', 'fill-opacity', 1)
+    });
+
+    map.on('mouseleave', nomBureau+'-fill', () => {
+        map.setPaintProperty(nomBureau+'-fill', 'fill-opacity', basePercentage)
+    });
+
+    map.on('click', nomBureau+'-fill', click);
 }

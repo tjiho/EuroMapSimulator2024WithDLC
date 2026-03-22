@@ -13,10 +13,11 @@
     <div id="map"></div>
     <div id="settings">
         <select id="election-select">
-            <option>Municipales 2026</option>
+            <option>Municipales 2026 1er tour</option>
             <option>Européennes 2024</option>
         </select>
-        <select id="mode-select">
+        <select id="mode-select" value="zone">
+            <option value="zone">Zone</option>
             <option value="camembert">Camembert</option>
             <option value="point">Point</option>
             <option value="melange">Mélange</option>
@@ -43,7 +44,7 @@
     });
 
     let electionActuelle = "Municipales 2026"
-    let modeActuel = "camembert"
+    let modeActuel = "zone"
 
     let derniereTaille = 0
     function mettreAJourTailleMarqueurs() {
