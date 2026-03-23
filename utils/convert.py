@@ -16,15 +16,11 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
 
 # Fichiers d'entrée (par défaut)
-INPUT_RESULTATS = os.path.join(PROJECT_DIR, "resultats-elections-municipales-2026-1er-tour.json")
-INPUT_GEO = os.path.join(PROJECT_DIR, "elections-2024-lieux-de-vote.geojson")
-
-# Fichiers de sortie
-OUTPUT_RESULTATS = os.path.join(PROJECT_DIR, "municipales-2026-resultats.json")
-OUTPUT_GEO = os.path.join(PROJECT_DIR, "elections-municipales-2026-lieux-de-vote.json")
+# INPUT_RESULTATS = os.path.join(PROJECT_DIR, "resultats-elections-municipales-2026-1er-tour.json")
+# INPUT_GEO = os.path.join(PROJECT_DIR, "elections-2024-lieux-de-vote.geojson")
 
 # Colonnes paires contenant les votes (18, 20, 22, ..., 36)
-COLONNES_VOTES_SOURCE = list(range(18, 37, 2))  # 10 colonnes
+
 
 
 def convertir_resultats(fichier_entree, fichier_sortie):
@@ -35,8 +31,8 @@ def convertir_resultats(fichier_entree, fichier_sortie):
     resultats = []
     for bureau in donnees:
         record = {"column_7": bureau["column_7"]}
-        for i, col_source in enumerate(COLONNES_VOTES_SOURCE):
-            col_cible = 20 + i * 2  # column_20, column_22, ..., column_38
+        for i, col_source in enumerate(range(18, len(donnees[0])+1, 2)):
+            col_cible = 18 + i * 2  # column_18, column_20, column_22, ..., column_38
             record[f"column_{col_cible}"] = bureau[f"column_{col_source}"]
         resultats.append(record)
 
@@ -55,8 +51,12 @@ def convertir_geometrie(fichier_geo, fichier_resultats, fichier_sortie):
     lieux = []
     for feature in geojson["features"]:
         props = feature["properties"]
+
+        if("bureaux" not in props):
+            props["bureaux"] = set()
+            props["bureaux"].add(props["bureau"])
+    
         lieux.append({
-            "lieu_de_vote": props["lieu_de_vote"],
             "adresse": props["adresse"],
             "bureaux": list(props["bureaux"]),
             "geo_point_2d": props["geo_point_2d"],
@@ -99,23 +99,32 @@ def convertir_geometrie(fichier_geo, fichier_resultats, fichier_sortie):
 
 
 def main():
-    fichier_resultats = INPUT_RESULTATS
-    fichier_geo = INPUT_GEO
+    fichier_resultats = None
+    fichier_geo = None
 
     # Permettre de passer des fichiers en argument
     if len(sys.argv) >= 2:
         fichier_resultats = sys.argv[1]
+    else: 
+        print("Usage: python convert.py <fichier_resultats> <fichier_geo>")
+        exit()
+
     if len(sys.argv) >= 3:
         fichier_geo = sys.argv[2]
+    else:
+        print("Usage: python convert.py <fichier_resultats> <fichier_geo>")
+        exit()
 
-    if not os.path.exists(fichier_resultats):
-        print(f"Erreur : fichier de résultats introuvable : {fichier_resultats}")
-        sys.exit(1)
+    if len(sys.argv) >= 3:
+        fichier_geo = sys.argv[2]
+    else:
+        print("Usage: python convert.py <fichier_resultats> <fichier_geo>")
+        exit()
 
-    convertir_resultats(fichier_resultats, OUTPUT_RESULTATS)
+    convertir_resultats(fichier_resultats, fichier_resultats + ".out.json")
 
     if os.path.exists(fichier_geo):
-        convertir_geometrie(fichier_geo, fichier_resultats, OUTPUT_GEO)
+        convertir_geometrie(fichier_geo, fichier_resultats, fichier_geo + ".out.json")
     else:
         print(f"Attention : fichier de géométrie introuvable : {fichier_geo}")
         print("  La conversion de la géométrie a été ignorée.")
