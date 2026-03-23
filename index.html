@@ -15,12 +15,8 @@
   <body>
     <div id="map"></div>
     <div id="settings">
-      <select id="election-select">
-        <option>Municipales 2026 2nd tour</option>
-        <option>Municipales 2026 1er tour</option>
-        <!-- <option>Européennes 2024</option> -->
-      </select>
-      <select id="mode-select" value="zone">
+      <select id="election-select"></select>
+      <select id="mode-select">
         <option value="zone">Zone</option>
         <option value="camembert">Camembert</option>
         <option value="point">Point</option>
@@ -31,61 +27,6 @@
       <h2 id="panneau-titre"></h2>
       <div id="panneau-contenu"></div>
     </div>
+    <script type="module" src="/src/app.js"></script>
   </body>
-
-  <script type="module">
-    import { elections } from "/src/const/elections.js";
-    import { chargerElection } from "/src/carte.js";
-    import { masquerPanneau } from "/src/panneau.js";
-
-    let protocol = new pmtiles.Protocol({ metadata: true });
-    maplibregl.addProtocol("pmtiles", protocol.tile);
-    const map = new maplibregl.Map({
-      container: "map",
-      style: "https://static.ppsfleet.navy/osm-data/styles/generic-latest.json",
-      center: [1.4436, 43.6042],
-      zoom: 12,
-    });
-
-    let electionActuelle = "Municipales 2026 2nd tour";
-    let modeActuel = "zone";
-
-    let derniereTaille = 0;
-    function mettreAJourTailleMarqueurs() {
-      const zoom = map.getZoom();
-      const zoomBorne = Math.max(12, Math.min(15, zoom));
-      const taille = Math.round(16 + ((zoomBorne - 12) * (50 - 16)) / 3);
-      if (taille === derniereTaille) return;
-      derniereTaille = taille;
-      document.documentElement.style.setProperty(
-        "--taille-marqueur",
-        taille + "px",
-      );
-    }
-
-    map.on("load", () => {
-      mettreAJourTailleMarqueurs();
-      chargerElection(map, elections[electionActuelle], modeActuel);
-    });
-
-    map.on("zoom", mettreAJourTailleMarqueurs);
-
-    map.addControl(new maplibregl.NavigationControl(), "bottom-left");
-
-    document
-      .getElementById("election-select")
-      .addEventListener("change", (e) => {
-        electionActuelle = e.target.value;
-        chargerElection(map, elections[electionActuelle], modeActuel);
-      });
-
-    document.getElementById("mode-select").addEventListener("change", (e) => {
-      modeActuel = e.target.value;
-      chargerElection(map, elections[electionActuelle], modeActuel);
-    });
-
-    map.on("click", () => {
-      masquerPanneau();
-    });
-  </script>
 </html>
