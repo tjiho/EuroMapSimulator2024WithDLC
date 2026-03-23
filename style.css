@@ -4,6 +4,7 @@ body {
     margin: 0;
     padding: 0;
     height: 100%;
+    font-family: system-ui, -apple-system, sans-serif;
 }
 
 #map {
@@ -23,6 +24,11 @@ body {
     gap: 8px;
 }
 
+
+/*
+   Panneau
+*/
+
 #panneau {
     position: absolute;
     top: 0;
@@ -36,34 +42,40 @@ body {
     display: none;
     z-index: 2;
     box-sizing: border-box;
+
+    h1 {
+        font-weight: 300;
+        margin: 0;
+        text-align: center;
+        margin-block: 1rem;
+    }
 }
 
-#panneau-titre {
-    margin-top: 0;
+.line-resultat {
+    margin-bottom: 1rem;
+    
+    h3 {
+        margin: 0;
+    }
+
+    .line-resultat__res {
+        display: flex;
+        gap: 1rem;
+
+        progress {
+            flex: 1;
+        }
+    }
 }
 
-.panneau-bureau {
-    margin-bottom: 16px;
-}
 
-.panneau-bureau h3 {
-    margin: 8px 0 4px;
-}
 
-.panneau-ligne {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-    font-size: 13px;
-    line-height: 1.6;
-}
 
-.panneau-carre {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    flex-shrink: 0;
-}
+
+
+/*
+    marqueurs
+*/
 
 .marqueur-camembert {
     cursor: pointer;

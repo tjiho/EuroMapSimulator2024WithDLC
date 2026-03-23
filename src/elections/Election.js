@@ -25,6 +25,10 @@ export class Election {
     for (const bureauDeVote of donneesDesBureauxDeVote) {
       bureauxDeVote[bureauDeVote['column_7']] = {
         resultats: this.traiterLesResultatsParListe(bureauDeVote),
+        inscrits: bureauDeVote['inscrits'],
+        votants: bureauDeVote['votants'],
+        blanc: bureauDeVote['blanc'],
+        nul: bureauDeVote['nul']
       }
     }
     return bureauxDeVote

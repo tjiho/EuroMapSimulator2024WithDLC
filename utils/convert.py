@@ -30,7 +30,7 @@ def convertir_resultats(fichier_entree, fichier_sortie):
 
     resultats = []
     for bureau in donnees:
-        record = {"column_7": bureau["column_7"]}
+        record = {"column_7": bureau["column_7"], "inscrits": bureau["column_9"], "votants": bureau["column_11"], "blanc": bureau["column_13"], "nul": bureau["column_14"]}
         for i, col_source in enumerate(range(18, len(donnees[0])+1, 2)):
             col_cible = 18 + i * 2  # column_18, column_20, column_22, ..., column_38
             record[f"column_{col_cible}"] = bureau[f"column_{col_source}"]
@@ -111,19 +111,12 @@ def main():
 
     if len(sys.argv) >= 3:
         fichier_geo = sys.argv[2]
-    else:
-        print("Usage: python convert.py <fichier_resultats> <fichier_geo>")
-        exit()
 
-    if len(sys.argv) >= 3:
-        fichier_geo = sys.argv[2]
-    else:
-        print("Usage: python convert.py <fichier_resultats> <fichier_geo>")
-        exit()
+   
 
     convertir_resultats(fichier_resultats, fichier_resultats + ".out.json")
 
-    if os.path.exists(fichier_geo):
+    if fichier_geo and os.path.exists(fichier_geo):
         convertir_geometrie(fichier_geo, fichier_resultats, fichier_geo + ".out.json")
     else:
         print(f"Attention : fichier de géométrie introuvable : {fichier_geo}")

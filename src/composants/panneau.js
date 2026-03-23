@@ -1,50 +1,51 @@
 import { COULEUR_AUTRES } from '../outils/couleurs.js'
-
+import { html, render } from '../../libs/preact.mjs'
 const elPanneau = document.getElementById('panneau')
 const elTitre = document.getElementById('panneau-titre')
 const elContenu = document.getElementById('panneau-contenu')
 
 export function afficherPanneau(bureaux, election) {
-  elContenu.innerHTML = ''
-
-  const entries = Object.entries(bureaux)
-
-  elTitre.textContent = entries.length === 1
-    ? `Bureau ${entries[0][0]}`
-    : `${entries.length} bureaux de vote`
-
-  for (const [nomDeBureauDeVote, donnees] of entries) {
-    const section = document.createElement('div')
-    section.className = 'panneau-bureau'
-
-    if (entries.length > 1) {
-      const h3 = document.createElement('h3')
-      h3.textContent = `Bureau ${nomDeBureauDeVote}`
-      section.appendChild(h3)
-    }
-
-    for (const [nom, voix] of donnees.resultats) {
-      const ligne = document.createElement('div')
-      ligne.className = 'panneau-ligne'
-
-      const carre = document.createElement('span')
-      carre.className = 'panneau-carre'
-      carre.style.backgroundColor = election.couleurs[nom] || COULEUR_AUTRES
-
-      const texte = document.createElement('span')
-      texte.textContent = `${nom} : ${voix}`
-
-      ligne.appendChild(carre)
-      ligne.appendChild(texte)
-      section.appendChild(ligne)
-    }
-
-    elContenu.appendChild(section)
-  }
+  render(
+      html`<${Panneau} bureaux=${bureaux} election=${election}/>`,
+      elPanneau
+  );
 
   elPanneau.style.display = 'block'
 }
 
 export function masquerPanneau() {
   elPanneau.style.display = 'none'
+}
+
+function Panneau({bureaux, election}) {
+  const bureauxNoms = Object.keys(bureaux)
+  const titre = `Bureau ${bureauxNoms[0]}`
+  const donnees = bureaux[bureauxNoms[0]]
+  console.log(donnees)
+  return html`
+    <aside>
+      <h1>${titre}</h1>
+      ${donnees.resultats.map(res => html`
+        <${Resultats} candidat=${res[0]} nombreDeVoix=${res[1]} total=${donnees['votants']} couleur=${election.couleurs[res[0]]}/>
+      `)}
+      
+      <${Resultats} candidat="Blancs et Nuls" nombreDeVoix=${donnees['blanc'] + donnees['nul']} total=${donnees['votants']} couleur=${COULEUR_AUTRES}/>
+
+    </aside>
+  `
+
+}
+
+function Resultats({candidat, nombreDeVoix, total, couleur}) {
+  return html`
+    <section class="line-resultat">
+      <h3>${candidat}</h3>
+      <div class="line-resultat__res">
+        <progress value=${nombreDeVoix} max=${total} style=${{ accentColor: couleur }}/>
+        <span>${(nombreDeVoix / total * 100).toFixed(2)}%</span>
+        <span>:</span>
+        <span>${nombreDeVoix}</span>
+      </div>
+    </section>
+  `
 }

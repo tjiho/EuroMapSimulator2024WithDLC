@@ -19,7 +19,8 @@ export function creerToutesLesZones(indexFusionne, election) {
     const couleur = election.couleurDuBureau(premierBureau.resultats)
     const opaciteBase = election.opaciteDuBureau(premierBureau.resultats)
     const geometry = shape.geometry || shape
-
+    const abstention = premierBureau['inscrits'] - premierBureau['votant']
+  
     features.push({
       type: 'Feature',
       id,
