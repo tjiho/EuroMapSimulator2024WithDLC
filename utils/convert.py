@@ -22,7 +22,6 @@ PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
 # Colonnes paires contenant les votes (18, 20, 22, ..., 36)
 
 
-
 def convertir_resultats(fichier_entree, fichier_sortie):
     """Convertit les résultats du format brut vers le format attendu par index.html."""
     with open(fichier_entree, encoding="utf-8") as f:
@@ -30,7 +29,8 @@ def convertir_resultats(fichier_entree, fichier_sortie):
 
     resultats = []
     for bureau in donnees:
-        record = {"column_7": bureau["column_7"], "inscrits": bureau["column_9"], "votants": bureau["column_11"], "blanc": bureau["column_13"], "nul": bureau["column_14"]}
+        record = {"column_7": bureau["column_7"], "inscrits": bureau["column_9"],
+                  "votants": bureau["column_11"], "blanc": bureau["column_13"], "nul": bureau["column_14"]}
         for i, col_source in enumerate(range(18, len(donnees[0])+1, 2)):
             col_cible = 18 + i * 2  # column_18, column_20, column_22, ..., column_38
             record[f"column_{col_cible}"] = bureau[f"column_{col_source}"]
@@ -52,14 +52,15 @@ def convertir_geometrie(fichier_geo, fichier_resultats, fichier_sortie):
     for feature in geojson["features"]:
         props = feature["properties"]
 
-        if("bureaux" not in props):
+        if ("bureaux" not in props):
             props["bureaux"] = set()
             props["bureaux"].add(props["bureau"])
-    
+
         lieux.append({
             "adresse": props["adresse"],
             "bureaux": list(props["bureaux"]),
             "geo_point_2d": props["geo_point_2d"],
+            "geo_shape": feature["geometry"]
         })
 
     # Trouver les bureaux avec suffixes dans les résultats
@@ -88,14 +89,16 @@ def convertir_geometrie(fichier_geo, fichier_resultats, fichier_sortie):
                 break
 
         if not trouve:
-            print(f"  Attention : pas de lieu trouvé pour le bureau {bureau_suffixe} (parent: {parent_3})")
+            print(
+                f"  Attention : pas de lieu trouvé pour le bureau {bureau_suffixe} (parent: {parent_3})")
 
     with open(fichier_sortie, "w", encoding="utf-8") as f:
         json.dump(lieux, f, ensure_ascii=False)
 
     print(f"Géométrie : {len(lieux)} lieux de vote -> {fichier_sortie}")
     if bureaux_avec_suffixe:
-        print(f"  {len(bureaux_avec_suffixe)} bureaux avec suffixe ajoutés : {', '.join(bureaux_avec_suffixe)}")
+        print(
+            f"  {len(bureaux_avec_suffixe)} bureaux avec suffixe ajoutés : {', '.join(bureaux_avec_suffixe)}")
 
 
 def main():
@@ -105,19 +108,18 @@ def main():
     # Permettre de passer des fichiers en argument
     if len(sys.argv) >= 2:
         fichier_resultats = sys.argv[1]
-    else: 
+    else:
         print("Usage: python convert.py <fichier_resultats> <fichier_geo>")
         exit()
 
     if len(sys.argv) >= 3:
         fichier_geo = sys.argv[2]
 
-   
-
     convertir_resultats(fichier_resultats, fichier_resultats + ".out.json")
 
     if fichier_geo and os.path.exists(fichier_geo):
-        convertir_geometrie(fichier_geo, fichier_resultats, fichier_geo + ".out.json")
+        convertir_geometrie(fichier_geo, fichier_resultats,
+                            fichier_geo + ".out.json")
     else:
         print(f"Attention : fichier de géométrie introuvable : {fichier_geo}")
         print("  La conversion de la géométrie a été ignorée.")
