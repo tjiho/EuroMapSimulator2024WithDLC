@@ -7,20 +7,18 @@ let handleMousemove = null
 let handleMouseleave = null
 let handleClick = null
 
-export function creerToutesLesZones(indexFusionne, election) {
+export function creerToutesLesZones(election) {
   const features = []
   donneesParZone = {}
   let id = 0
 
-  for (const { shape, bureaux } of Object.values(indexFusionne)) {
-    if (!shape) continue
+  for (const bureau of Object.values(election.donnees)) {
+    if (!bureau.shape) continue
 
-    const premierBureau = Object.values(bureaux)[0]
-    const couleur = election.couleurDuBureau(premierBureau.resultats)
-    const opaciteBase = election.opaciteDuBureau(premierBureau.resultats)
-    const geometry = shape.geometry || shape
-    const abstention = premierBureau['inscrits'] - premierBureau['votant']
-  
+    const couleur = election.couleurDuBureau(bureau.resultats)
+    const opaciteBase = election.opaciteDuBureau(bureau.resultats)
+    const geometry = bureau.shape.geometry || bureau.shape
+
     features.push({
       type: 'Feature',
       id,
@@ -28,7 +26,7 @@ export function creerToutesLesZones(indexFusionne, election) {
       properties: { couleur, opaciteBase },
     })
 
-    donneesParZone[id] = { bureaux, election }
+    donneesParZone[id] = { nom: bureau.nom, electionActuelle: election.nom }
     id++
   }
 
@@ -87,7 +85,7 @@ export function creerToutesLesZones(indexFusionne, election) {
     const featureId = e.features[0].id
     const donnees = donneesParZone[featureId]
     if (donnees) {
-      afficherPanneau(donnees.bureaux, donnees.election)
+      afficherPanneau(donnees.nom, donnees.electionActuelle)
     }
   }
 

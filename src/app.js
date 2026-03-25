@@ -1,21 +1,18 @@
 import carte from './singletons/carte.js'
-import donnees from './singletons/donnees.js'
-import { electionsParNom } from './elections/index.js'
+import { electionsParNom, chargerToutesLesElections } from './elections/index.js'
 import { surChangementElection, surChangementMode, electionParDefaut, modeParDefaut } from './composants/selecteurs.js'
 import { masquerPanneau, afficherPanneau } from './composants/panneau.js'
 import { creerToutesLesZones, supprimerToutesLesZones } from './visualisations/zone.js'
 import { creerMarqueurCamembert, creerMarqueurPoint, creerMarqueurMelange } from './visualisations/marqueurs.js'
-import { agregerLesVoix } from './outils/geometrie.js'
 
 let marqueurs = []
 let electionActuelle = electionParDefaut()
 let modeActuel = modeParDefaut()
 
-async function chargerEtAfficher() {
+function chargerEtAfficher() {
   supprimerLesMarqueurs()
   const election = electionsParNom[electionActuelle]
-  const indexFusionne = await donnees.charger(election)
-  afficherLesDonnees(indexFusionne, election, modeActuel)
+  afficherLesDonnees(election, modeActuel)
 }
 
 function supprimerLesMarqueurs() {
@@ -24,13 +21,14 @@ function supprimerLesMarqueurs() {
   supprimerToutesLesZones()
 }
 
-function afficherLesDonnees(indexFusionne, election, mode) {
+function afficherLesDonnees(election, mode) {
   if (mode === 'zone') {
-    creerToutesLesZones(indexFusionne, election)
+    creerToutesLesZones(election)
     return
   }
 
-  for (const { coordonnees, bureaux } of Object.values(indexFusionne)) {
+  for (const bureau of Object.values(election.donnees)) {
+    if (!bureau.geometrie) continue
     try {
       const creerMarqueur = mode === 'point'
         ? creerMarqueurPoint
@@ -38,16 +36,15 @@ function afficherLesDonnees(indexFusionne, election, mode) {
           ? creerMarqueurMelange
           : creerMarqueurCamembert
 
-      const resultatsAgreges = agregerLesVoix(bureaux)
-      const element = creerMarqueur(resultatsAgreges, election.couleurs)
+      const element = creerMarqueur(bureau.resultats, election.couleurs)
 
       element.addEventListener('click', (e) => {
         e.stopPropagation()
-        afficherPanneau(bureaux, election)
+        afficherPanneau(bureau.nom, electionActuelle)
       })
 
       const marqueur = new maplibregl.Marker({ element })
-        .setLngLat(coordonnees)
+        .setLngLat(bureau.geometrie)
         .addTo(carte)
       marqueurs.push(marqueur)
     } catch (error) {
@@ -66,7 +63,10 @@ function mettreAJourTailleMarqueurs() {
   document.documentElement.style.setProperty('--taille-marqueur', taille + 'px')
 }
 
-carte.on('load', () => {
+const carteChargee = new Promise(resolve => carte.on('load', resolve))
+
+Promise.all([chargerToutesLesElections(), carteChargee]).then(() => {
+  document.getElementById('chargement').remove()
   mettreAJourTailleMarqueurs()
   chargerEtAfficher()
 })

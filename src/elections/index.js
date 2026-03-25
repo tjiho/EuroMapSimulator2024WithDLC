@@ -11,3 +11,7 @@ export const elections = [
 export const electionsParNom = Object.fromEntries(
   elections.map(e => [e.nom, e])
 )
+
+export function chargerToutesLesElections() {
+  return Promise.all(elections.map(e => e.charger()))
+}

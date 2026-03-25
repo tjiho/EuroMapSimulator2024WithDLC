@@ -1,12 +1,12 @@
 import { COULEUR_AUTRES } from "../outils/couleurs.js";
 import { html, render } from "../../libs/preact.mjs";
-const elPanneau = document.getElementById("panneau");
-const elTitre = document.getElementById("panneau-titre");
-const elContenu = document.getElementById("panneau-contenu");
+import { elections } from '../elections/index.js'
 
-export function afficherPanneau(bureaux, election) {
+const elPanneau = document.getElementById("panneau");
+
+export function afficherPanneau(nomDuBureau, electionActuelle) {
   render(
-    html`<${Panneau} bureaux=${bureaux} election=${election} />`,
+    html`<${Panneau} nomDuBureau=${nomDuBureau} electionActuelle=${electionActuelle}/>`,
     elPanneau,
   );
 
@@ -17,21 +17,31 @@ export function masquerPanneau() {
   elPanneau.style.display = "none";
 }
 
-function Panneau({ bureaux, election }) {
-  const bureauxNoms = Object.keys(bureaux);
-  const titre = `Bureau ${bureauxNoms[0]}`;
-  const donnees = bureaux[bureauxNoms[0]];
-  console.log(donnees);
+function Panneau({ nomDuBureau, electionActuelle }) {
   return html`
     <aside>
-      <h1>${titre}</h1>
+      <h1>Bureau ${nomDuBureau}</h1>
+      ${elections.map(election => html`<${ElectionResultats} nomDuBureau=${nomDuBureau} election=${election} electionActuelle=${electionActuelle}/>`)}
+    </aside>
+  `;
+}
+
+function ElectionResultats({ nomDuBureau, election, electionActuelle }) {
+  console.log(election.nom, electionActuelle)
+  const donnees = election.donnees[nomDuBureau];
+  if (!donnees) return null
+  const participation = ((donnees.votants) / donnees.inscrits * 100).toFixed(2)
+  return html`
+    <details ref=${el => el && (el.open = election.nom === electionActuelle)}>
+      <summary>${election.nom}</summary>
+      <div class="participation"><span class="participation__label">Participation:</span> <span class="participation__number">${participation}%</span></div>
       <div class="resultats">
         ${donnees.resultats.map(
           (res) => html`
             <${Resultats}
               candidat=${res[0]}
               nombreDeVoix=${res[1]}
-              total=${donnees["votants"]}
+              total=${donnees.votants}
               couleur=${election.couleurs[res[0]]}
             />
           `,
@@ -39,12 +49,12 @@ function Panneau({ bureaux, election }) {
 
         <${Resultats}
           candidat="Blancs et Nuls"
-          nombreDeVoix=${donnees["blanc"] + donnees["nul"]}
-          total=${donnees["votants"]}
+          nombreDeVoix=${donnees.blanc + donnees.nul}
+          total=${donnees.votants}
           couleur=${COULEUR_AUTRES}
         />
       </div>
-    </aside>
+    </details>
   `;
 }
 

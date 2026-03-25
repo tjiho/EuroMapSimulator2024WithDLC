@@ -2,6 +2,8 @@ import { centroide, padBureauDeVote } from '../outils/geometrie.js'
 import { COULEUR_AUTRES } from '../outils/couleurs.js'
 
 export class Election {
+  #donnees = null
+
   constructor({ nom, fichierResultats, fichierGeometrie, couleurs, nomDesListes }) {
     this.nom = nom
     this.fichierResultats = fichierResultats
@@ -24,6 +26,7 @@ export class Election {
     const bureauxDeVote = {}
     for (const bureauDeVote of donneesDesBureauxDeVote) {
       bureauxDeVote[bureauDeVote['column_7']] = {
+        nom: bureauDeVote['column_7'],
         resultats: this.traiterLesResultatsParListe(bureauDeVote),
         inscrits: bureauDeVote['inscrits'],
         votants: bureauDeVote['votants'],
@@ -59,5 +62,25 @@ export class Election {
     if (!resultats || resultats.length === 0) return 0.3
     const totalVoix = resultats.reduce((total, r) => total + r[1], 0)
     return totalVoix > 0 ? resultats[0][1] / totalVoix : 0.3
+  }
+
+  get donnees() {
+    return this.#donnees
+  }
+
+  async charger() {
+    const [resultatsJson, geometrieJson] = await Promise.all([
+      this.#recupererJson(this.fichierResultats),
+      this.#recupererJson(this.fichierGeometrie),
+    ])
+
+    const indexParBureau = this.indexerParBureauDeVote(resultatsJson)
+    this.augmenterAvecGeometrie(indexParBureau, geometrieJson)
+    this.#donnees = indexParBureau
+  }
+
+  async #recupererJson(url) {
+    const res = await fetch(url)
+    return res.json()
   }
 }

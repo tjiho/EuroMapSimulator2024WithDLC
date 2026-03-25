@@ -19,7 +19,6 @@ class Municipales2026SecondTour extends Election {
 
   opaciteDuBureau(resultats) {
     if (this.couleurDuBureau(resultats) === COULEUR_AUTRES) {
-      console.log("yop");
       return 0.8;
     }
     const total = resultats.reduce((s, r) => s + r[1], 0);
