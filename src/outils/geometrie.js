@@ -12,5 +12,11 @@ export function centroide(geoShape) {
 }
 
 export function padBureauDeVote(nom) {
-  return nom.length === 3 ? '0' + nom : nom
+  const match = nom.match(/^(\d+)([A-Za-z]?)$/)
+  if (!match) return nom
+  const [, chiffres, suffixe] = match
+  const num = parseInt(chiffres, 10)
+  return suffixe
+    ? String(num).padStart(3, '0') + suffixe
+    : String(num).padStart(4, '0')
 }

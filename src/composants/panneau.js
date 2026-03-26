@@ -27,7 +27,6 @@ function Panneau({ nomDuBureau, electionActuelle }) {
 }
 
 function ElectionResultats({ nomDuBureau, election, electionActuelle }) {
-  console.log(election.nom, electionActuelle)
   const donnees = election.donnees[nomDuBureau];
   if (!donnees) return null
   const participation = ((donnees.votants) / donnees.inscrits * 100).toFixed(2)

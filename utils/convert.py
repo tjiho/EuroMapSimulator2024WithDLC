@@ -78,18 +78,29 @@ def convertir_geometrie(fichier_geo, fichier_resultats, fichier_sortie, cle_bure
         if re.search(r"[A-Z]$", bureau_id):
             bureaux_avec_suffixe.append(bureau_id)
 
-    # Ajouter les bureaux suffixés à leur lieu de vote parent
+    # Bureaux déjà présents comme feature propre dans la géométrie
+    bureaux_existants = set()
+    for lieu in lieux:
+        for b in lieu["bureaux"]:
+            bureaux_existants.add(b)
+
+    # Ajouter les bureaux suffixés à leur lieu de vote parent (sauf si déjà présent)
     for bureau_suffixe in bureaux_avec_suffixe:
+        suffixe_lettre = bureau_suffixe[-1]
+        parent_num = bureau_suffixe[:-1]
+        normalise = parent_num.lstrip("0").zfill(3) + suffixe_lettre
+
+        if normalise in bureaux_existants:
+            continue
+
         parent = re.sub(r"[A-Z]$", "", bureau_suffixe)
-        # Chercher le parent dans les 3 chiffres (format geo)
         parent_3 = parent.lstrip("0") if len(parent) > 3 else parent
         parent_3 = parent_3.zfill(3)
 
         trouve = False
         for lieu in lieux:
             if parent_3 in lieu["bureaux"]:
-                # Stocker en 4 chars pour que ajouterUnZeroSiNescessaire le passe tel quel
-                lieu["bureaux"].append(bureau_suffixe)
+                lieu["bureaux"].append(normalise)
                 trouve = True
                 break
 
